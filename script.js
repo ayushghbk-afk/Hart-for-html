@@ -1,13 +1,6 @@
 const canvas = document.getElementById('heartCanvas');
 const ctx = canvas.getContext('2d');
 
-function resizeCanvas() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-    initBackgroundStars(); // Recalculate background stars configuration on resize
-}
-window.addEventListener('resize', resizeCanvas);
-
 // Control Panel Configurations
 const settings = {
     shape: 'Heart',
@@ -29,18 +22,16 @@ class BackgroundStar {
     constructor() {
         this.x = Math.random() * canvas.width;
         this.y = Math.random() * canvas.height;
-        this.size = Math.random() * 1.5 + 0.2; // Tiny background stars
-        // Dynamic depths for a 3D parallax camera movement feeling
-        this.depth = Math.random() * 0.8 + 0.2; 
+        this.size = Math.random() * 1.5 + 0.2; 
+        this.depth = Math.random() * 0.8 + 0.2; // Parallax layers
         this.opacity = Math.random() * 0.7 + 0.3;
     }
 
     update() {
-        // Slowly drift background stars downward/sideways based on depth
         this.y += settings.starSpeed * this.depth;
         this.x += (settings.starSpeed * 0.2) * this.depth;
 
-        // Wrap around screen edges smoothly
+        // Wrap around screen boundaries smoothly
         if (this.y > canvas.height) {
             this.y = 0;
             this.x = Math.random() * canvas.width;
@@ -141,11 +132,21 @@ function initMainParticles() {
     }
 }
 
-// Initial Call to spawn space and shapes
-resizeCanvas();
+// Window resize handling configuration
+function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    initBackgroundStars(); // Regenerate stars boundary constraints dynamically
+}
+window.addEventListener('resize', resizeCanvas);
+
+// --- INITIALIZE ENGINES ON LOAD ---
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+initBackgroundStars();
 initMainParticles();
 
-// Control Panel UI
+// --- CONTROL PANEL UI CUSTOMIZATION ---
 const gui = new lil.GUI({ title: 'Engine Configuration' });
 
 const f1 = gui.addFolder('Shape Properties');
@@ -161,19 +162,18 @@ const f2 = gui.addFolder('Space Background');
 f2.add(settings, 'starCount', 10, 500, 5).name('Star Density').onChange(initBackgroundStars);
 f2.add(settings, 'starSpeed', 0, 5, 0.1).name('Cosmic Drift Speed');
 
-// Render Engine Loop
+// Render Execution Loop
 function animate() {
-    // The transparent fill handles the neon trail blending mechanics
     ctx.fillStyle = `rgba(5, 5, 8, ${settings.clearAlpha})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // 1. Draw Starfield Background first (No neon shadow glow applied)
+    // 1. Draw drifting starfields smoothly beneath shapes
     bgStars.forEach(star => {
         star.update();
         star.draw();
     });
 
-    // 2. Draw Main Morphing Shapes on top (With glow effects activated)
+    // 2. Render neon morphing shape layers
     ctx.shadowBlur = settings.glowStrength;
     ctx.shadowColor = settings.color;
 
@@ -182,7 +182,7 @@ function animate() {
         particle.draw();
     });
 
-    ctx.shadowBlur = 0; // Performance optimization safety reset
+    ctx.shadowBlur = 0; 
     requestAnimationFrame(animate);
 }
 
